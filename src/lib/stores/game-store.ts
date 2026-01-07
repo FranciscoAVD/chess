@@ -1,22 +1,6 @@
 import { create } from "zustand";
 import { KNIGHT_LUT } from "@/lib/lut";
-
-const DEFAULT_GAME_STATE = [
-  /**********White**********/
-  0x00_00_00_00_00_00_ff_00n, //pawns
-  0x00_00_00_00_00_00_00_42n, //knights
-  0x00_00_00_00_00_00_00_24n, //bishops
-  0x00_00_00_00_00_00_00_81n, //rooks
-  0x00_00_00_00_00_00_00_08n, //queen
-  0x00_00_00_00_00_00_00_10n, //king
-  /**********Black**********/
-  0x00_ff_00_00_00_00_00_00n, //pawns
-  0x42_00_00_00_00_00_00_00n, //knights
-  0x24_00_00_00_00_00_00_00n, //bishops
-  0x81_00_00_00_00_00_00_00n, //rooks
-  0x08_00_00_00_00_00_00_00n, //queen
-  0x10_00_00_00_00_00_00_00n, //king
-] as const;
+import { INITIAL_GAME_STATE } from "@/lib/constants";
 
 const pieces = ["P", "N", "B", "R", "Q", "K"] as const;
 type PieceNames = (typeof pieces)[number];
@@ -47,7 +31,7 @@ interface GameStore {
 }
 
 const useGameStore = create<GameStore>((set, get) => ({
-  gameState: DEFAULT_GAME_STATE,
+  gameState: INITIAL_GAME_STATE,
   activePiece: null,
   setActivePiece: (t) =>
     set((state) => ({
@@ -57,9 +41,9 @@ const useGameStore = create<GameStore>((set, get) => ({
   validMoves: 0n,
   getValidMoves: (tile) => {
     const p = get().getPieceAtTile(tile);
-    if (!p) return 0n;
-
-    const totalOccupancy = get().getTotalOccupancy();
+    if (!p) {
+      return 0n;
+    }
 
     switch (p.name) {
       case "P": {
@@ -67,48 +51,13 @@ const useGameStore = create<GameStore>((set, get) => ({
       }
       case "N": {
         const friendly = get().getFriendlyFire(p.color);
-        return KNIGHT_LUT[tile] & BigInt.asUintN(64, ~friendly);
+        return KNIGHT_LUT[tile] & ~friendly;
       }
       case "B": {
         return 0n;
       }
       case "R": {
-        let fullRange: bigint = 0n;
-        //while one direction not blocked
-        let tileBelow = tile - 8;
-        let tileAbove = tile + 8;
-        let tileRight = tile + 1;
-        let tileLeft = tile - 1;
-        let belowOutOfRange = false;
-        let aboveOutOfRange = false;
-        let rightOutOfRange = false;
-        let leftOutOfRange = false;
-        const MAX_RIGHT = tile + 7 - (tile % 8);
-        const MAX_LEFT = tile - (tile % 8);
-        while (
-          !belowOutOfRange ||
-          !aboveOutOfRange ||
-          !rightOutOfRange ||
-          !leftOutOfRange
-        ) {
-          if (tileBelow >= 0) {
-            fullRange |= 1n << BigInt(tileBelow);
-            tileBelow -= 8;
-          } else if (!belowOutOfRange) belowOutOfRange = true;
-          if (tileAbove <= 63) {
-            fullRange |= 1n << BigInt(tileAbove);
-          } else if (!aboveOutOfRange) aboveOutOfRange = true;
-          if (tileRight <= MAX_RIGHT) {
-            fullRange |= 1n << BigInt(tileRight);
-            tileRight++;
-          } else if (!rightOutOfRange) rightOutOfRange = true;
-          if (tileLeft >= MAX_LEFT) {
-            fullRange |= 1n << BigInt(tileLeft);
-            tileLeft--;
-          } else if (!leftOutOfRange) leftOutOfRange = true;
-        }
-        //still need to cancel against occupied squares;
-        return fullRange;
+        return 0n;
       }
       case "Q": {
         return 0n;
@@ -149,7 +98,6 @@ const useGameStore = create<GameStore>((set, get) => ({
         };
       }
     }
-
     return null;
   },
   getTotalOccupancy: () =>
