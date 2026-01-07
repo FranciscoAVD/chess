@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { KNIGHT_LUT, CROSS_LUT } from "@/lib/lut";
 import { INITIAL_GAME_STATE } from "@/lib/constants";
-
+import { reverse64 } from "@/lib/utils";
 const pieces = ["P", "N", "B", "R", "Q", "K"] as const;
 type PieceNames = (typeof pieces)[number];
 
@@ -13,6 +13,43 @@ const PIECE_SYMBOLS: Record<number, PieceNames> = {
   4: "Q",
   5: "K",
 };
+
+/**
+ * Calculates sliding attacks (the "cross") for a Rook.
+ * @param tile The index of the piece (0-63)
+ * @param occupied A bitboard of all pieces currently on the board
+ */
+function getCrossAttacks(tile: number, occupied: bigint): bigint {
+  const s = BigInt(tile);
+  const slider = 1n << s;
+
+  // 1. Generate Masks
+  const fileMask = 0x0101010101010101n << s % 8n;
+  const rankMask = 0xffn << (8n * (s / 8n));
+
+  // --- VERTICAL ATTACKS (File) ---
+  const fileBlockers = occupied & fileMask;
+  // Forward (up the file)
+  const fwdFile = (fileBlockers - 2n * slider) ^ fileBlockers;
+  // Backward (down the file)
+  const revFileBlockers = reverse64(fileBlockers);
+  const revSlider = reverse64(slider);
+  const backFile = (revFileBlockers - 2n * revSlider) ^ revFileBlockers;
+  const fileAttacks = (fwdFile | reverse64(backFile)) & fileMask;
+
+  // --- HORIZONTAL ATTACKS (Rank) ---
+  const rankBlockers = occupied & rankMask;
+  // Forward (right across the rank)
+  const fwdRank = (rankBlockers - 2n * slider) ^ rankBlockers;
+  // Backward (left across the rank)
+  const revRankBlockers = reverse64(rankBlockers);
+  // (revSlider is already calculated)
+  const backRank = (revRankBlockers - 2n * revSlider) ^ revRankBlockers;
+  const rankAttacks = (fwdRank | reverse64(backRank)) & rankMask;
+
+  // Combine and remove the square the slider is standing on
+  return (fileAttacks | rankAttacks) & ~slider;
+}
 
 interface Piece {
   name: PieceNames;
@@ -41,20 +78,23 @@ const useGameStore = create<GameStore>((set, get) => ({
   validMoves: 0n,
   getValidMoves: (tile) => {
     const p = get().getPieceAtTile(tile);
-
+    if (!p) return 0n;
+    const friendly = get().getFriendlyFire(p.color);
+    const occupied =
+      get().getFriendlyFire(p.color === "white" ? "black" : "white") | friendly;
     switch (p?.name) {
       case "P": {
         return 0n;
       }
       case "N": {
-        const friendly = get().getFriendlyFire(p.color);
         return KNIGHT_LUT[tile] & ~friendly;
       }
       case "B": {
         return 0n;
       }
       case "R": {
-        return CROSS_LUT[tile];
+        const attacks = getRookAttacks(tile, occupied);
+        return attacks & ~friendly;
       }
       case "Q": {
         return 0n;
