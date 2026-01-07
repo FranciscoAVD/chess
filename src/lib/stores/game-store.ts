@@ -44,20 +44,16 @@ const useGameStore = create<GameStore>((set, get) => ({
 
     switch (p?.name) {
       case "P": {
-        console.log("Clicked on pawn");
         return 0n;
       }
       case "N": {
-        console.log("Clicked on knight");
         const friendly = get().getFriendlyFire(p.color);
         return KNIGHT_LUT[tile] & ~friendly;
       }
       case "B": {
-        console.log("Clicked on bishop");
         return 0n;
       }
       case "R": {
-        console.log("Clicked on rook");
         return CROSS_LUT[tile];
       }
       case "Q": {
@@ -67,7 +63,6 @@ const useGameStore = create<GameStore>((set, get) => ({
         return 0n;
       }
       default: {
-        console.log("No piece found at tile: ", tile);
         return 0n;
       }
     }
