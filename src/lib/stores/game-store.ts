@@ -43,6 +43,7 @@ interface GameStore {
   getValidMoves: (tile: number) => bigint;
   getFriendlyFire: (color: "white" | "black") => bigint;
   getPieceAtTile: (tile: number) => Omit<Piece, "tile"> | null;
+  getTotalOccupancy: () => bigint;
 }
 
 const useGameStore = create<GameStore>((set, get) => ({
@@ -57,6 +58,9 @@ const useGameStore = create<GameStore>((set, get) => ({
   getValidMoves: (tile) => {
     const p = get().getPieceAtTile(tile);
     if (!p) return 0n;
+
+    const totalOccupancy = get().getTotalOccupancy();
+
     switch (p.name) {
       case "P": {
         return 0n;
@@ -69,7 +73,42 @@ const useGameStore = create<GameStore>((set, get) => ({
         return 0n;
       }
       case "R": {
-        return 0n;
+        let fullRange: bigint = 0n;
+        //while one direction not blocked
+        let tileBelow = tile - 8;
+        let tileAbove = tile + 8;
+        let tileRight = tile + 1;
+        let tileLeft = tile - 1;
+        let belowOutOfRange = false;
+        let aboveOutOfRange = false;
+        let rightOutOfRange = false;
+        let leftOutOfRange = false;
+        const MAX_RIGHT = tile + 7 - (tile % 8);
+        const MAX_LEFT = tile - (tile % 8);
+        while (
+          !belowOutOfRange ||
+          !aboveOutOfRange ||
+          !rightOutOfRange ||
+          !leftOutOfRange
+        ) {
+          if (tileBelow >= 0) {
+            fullRange |= 1n << BigInt(tileBelow);
+            tileBelow -= 8;
+          } else if (!belowOutOfRange) belowOutOfRange = true;
+          if (tileAbove <= 63) {
+            fullRange |= 1n << BigInt(tileAbove);
+          } else if (!aboveOutOfRange) aboveOutOfRange = true;
+          if (tileRight <= MAX_RIGHT) {
+            fullRange |= 1n << BigInt(tileRight);
+            tileRight++;
+          } else if (!rightOutOfRange) rightOutOfRange = true;
+          if (tileLeft >= MAX_LEFT) {
+            fullRange |= 1n << BigInt(tileLeft);
+            tileLeft--;
+          } else if (!leftOutOfRange) leftOutOfRange = true;
+        }
+        //still need to cancel against occupied squares;
+        return fullRange;
       }
       case "Q": {
         return 0n;
@@ -113,6 +152,8 @@ const useGameStore = create<GameStore>((set, get) => ({
 
     return null;
   },
+  getTotalOccupancy: () =>
+    get().getFriendlyFire("white") | get().getFriendlyFire("black"),
 }));
 
 export { useGameStore, type Piece };

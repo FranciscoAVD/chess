@@ -29,7 +29,7 @@ function Tile({ isDark, canMove, tile, className, ...props }: TileProps) {
         <div className="absolute left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] size-4 bg-lime-100 border-3 border-lime-500 rounded-full" />
       )}
       {piece && <ChessPiece tile={tile} piece={piece} />}
-      <span className="absolute text-xs bottom-1 right-2">{tile + 1}</span>
+      <span className="absolute text-xs bottom-1 right-2">{tile}</span>
     </div>
   );
 }
