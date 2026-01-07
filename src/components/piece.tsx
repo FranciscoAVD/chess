@@ -14,7 +14,7 @@ function ChessPiece({ tile, piece }: ChessPieceProps) {
   return (
     <div
       className={cn(
-        " flex items-center justify-center w-full h-full drop-shadow-sm font-bold select-none",
+        "flex items-center justify-center w-full h-full drop-shadow-sm font-bold select-none",
         piece.color === "white" ? "text-white" : "text-green-950",
         active === tile && "bg-lime-300 hover:bg-lime-300",
       )}

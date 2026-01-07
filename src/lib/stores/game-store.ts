@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { KNIGHT_LUT } from "@/lib/lut";
+import { KNIGHT_LUT, CROSS_LUT } from "@/lib/lut";
 import { INITIAL_GAME_STATE } from "@/lib/constants";
 
 const pieces = ["P", "N", "B", "R", "Q", "K"] as const;
@@ -36,28 +36,29 @@ const useGameStore = create<GameStore>((set, get) => ({
   setActivePiece: (t) =>
     set((state) => ({
       activePiece: t,
-      validMoves: t ? state.getValidMoves(t) : 0n,
+      validMoves: t !== null ? state.getValidMoves(t) : 0n,
     })),
   validMoves: 0n,
   getValidMoves: (tile) => {
     const p = get().getPieceAtTile(tile);
-    if (!p) {
-      return 0n;
-    }
 
-    switch (p.name) {
+    switch (p?.name) {
       case "P": {
+        console.log("Clicked on pawn");
         return 0n;
       }
       case "N": {
+        console.log("Clicked on knight");
         const friendly = get().getFriendlyFire(p.color);
         return KNIGHT_LUT[tile] & ~friendly;
       }
       case "B": {
+        console.log("Clicked on bishop");
         return 0n;
       }
       case "R": {
-        return 0n;
+        console.log("Clicked on rook");
+        return CROSS_LUT[tile];
       }
       case "Q": {
         return 0n;
@@ -66,6 +67,7 @@ const useGameStore = create<GameStore>((set, get) => ({
         return 0n;
       }
       default: {
+        console.log("No piece found at tile: ", tile);
         return 0n;
       }
     }
