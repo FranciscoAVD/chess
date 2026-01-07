@@ -15,7 +15,7 @@ const PIECE_SYMBOLS: Record<number, PieceNames> = {
 };
 
 /**
- * Calculates sliding attacks (the "cross") for a Rook.
+ * Calculates sliding attacks using Hyperbola Quintessence.
  * @param tile The index of the piece (0-63)
  * @param occupied A bitboard of all pieces currently on the board
  */
@@ -93,7 +93,7 @@ const useGameStore = create<GameStore>((set, get) => ({
         return 0n;
       }
       case "R": {
-        const attacks = getRookAttacks(tile, occupied);
+        const attacks = getCrossAttacks(tile, occupied);
         return attacks & ~friendly;
       }
       case "Q": {
