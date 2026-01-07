@@ -18,7 +18,10 @@ const DEFAULT_GAME_STATE = [
   0x10_00_00_00_00_00_00_00n, //king
 ] as const;
 
-const PIECE_SYMBOLS: Record<number, string> = {
+const pieces = ["P", "N", "B", "R", "Q", "K"] as const;
+type PieceNames = (typeof pieces)[number];
+
+const PIECE_SYMBOLS: Record<number, PieceNames> = {
   0: "P",
   1: "N",
   2: "B",
@@ -27,39 +30,52 @@ const PIECE_SYMBOLS: Record<number, string> = {
   5: "K",
 };
 
-const pieces = ["pawn", "knight", "bishop", "rook", "queen", "king"] as const;
-type Pieces = (typeof pieces)[number];
-
+interface Piece {
+  name: PieceNames;
+  color: "white" | "black";
+  tile: number;
+}
 interface GameStore {
   gameState: readonly bigint[];
-  getValidMoves: (
-    name: Pieces,
-    tile: number,
-    color: "white" | "black",
-  ) => bigint;
+  activePiece: number | null;
+  validMoves: bigint;
+  setActivePiece: (tile: number | null) => void;
+  getValidMoves: (tile: number) => bigint;
   getFriendlyFire: (color: "white" | "black") => bigint;
-  getPieceAtIdx: (
-    idx: number,
-  ) => { symbol: string; color: "white" | "black" } | null;
+  getPieceAtTile: (tile: number) => Omit<Piece, "tile"> | null;
 }
 
 const useGameStore = create<GameStore>((set, get) => ({
   gameState: DEFAULT_GAME_STATE,
-  getValidMoves: (name, tile, color) => {
-    switch (name) {
-      case "pawn": {
+  activePiece: null,
+  setActivePiece: (t) =>
+    set((state) => ({
+      activePiece: t,
+      validMoves: t ? state.getValidMoves(t) : 0n,
+    })),
+  validMoves: 0n,
+  getValidMoves: (tile) => {
+    const p = get().getPieceAtTile(tile);
+    if (!p) return 0n;
+    switch (p.name) {
+      case "P": {
+        return 0n;
       }
-      case "knight": {
-        const friendly = get().getFriendlyFire(color);
+      case "N": {
+        const friendly = get().getFriendlyFire(p.color);
         return KNIGHT_LUT[tile] & BigInt.asUintN(64, ~friendly);
       }
-      case "bishop": {
+      case "B": {
+        return 0n;
       }
-      case "rook": {
+      case "R": {
+        return 0n;
       }
-      case "queen": {
+      case "Q": {
+        return 0n;
       }
-      case "king": {
+      case "K": {
+        return 0n;
       }
       default: {
         return 0n;
@@ -82,14 +98,14 @@ const useGameStore = create<GameStore>((set, get) => ({
 
     return friendly;
   },
-  getPieceAtIdx: (idx) => {
+  getPieceAtTile: (tile) => {
     const state = get().gameState;
-    const bIdx = BigInt(idx);
+    const bIdx = BigInt(tile);
 
     for (let i = 0; i < state.length; i++) {
       if ((state[i] >> bIdx) & 1n) {
         return {
-          symbol: PIECE_SYMBOLS[i % 6],
+          name: PIECE_SYMBOLS[i % 6],
           color: i > 5 ? "black" : "white",
         };
       }
@@ -99,4 +115,4 @@ const useGameStore = create<GameStore>((set, get) => ({
   },
 }));
 
-export { useGameStore };
+export { useGameStore, type Piece };
