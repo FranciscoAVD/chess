@@ -16,6 +16,7 @@ const PIECE_SYMBOLS: Record<number, PieceNames> = {
 
 /**
  * Calculates sliding attacks using Hyperbola Quintessence.
+ * https://www.chessprogramming.org/Hyperbola_Quintessence
  * @param tile The index of the piece (0-63)
  * @param occupied A bitboard of all pieces currently on the board
  */
